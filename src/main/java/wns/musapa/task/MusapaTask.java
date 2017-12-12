@@ -1,4 +1,4 @@
-package wns.musapa;
+package wns.musapa.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,14 @@ public class MusapaTask implements Runnable {
     private CoinTickFetcher coinTickFetcher = null;
     private CoinPipeline<CoinTick> pipeline = null;
 
+    private long interval = 1000L;
+
     public MusapaTask() {
+        this(1000L);
+    }
+
+    public MusapaTask(long interval) {
+        this.interval = interval;
     }
 
     @Override
@@ -20,16 +27,16 @@ public class MusapaTask implements Runnable {
         try {
             this.coinTickFetcher.onStart();
             this.pipeline.onStart();
-        } catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
 
-        while(!Thread.currentThread().isInterrupted()) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
                 CoinTick tick = this.coinTickFetcher.fetchTick();
                 this.pipeline.process(tick);
 
-                Thread.sleep(1000);
+                Thread.sleep(this.interval);
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
             }

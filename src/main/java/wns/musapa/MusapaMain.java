@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wns.musapa.fetcher.KorbitFetcher;
 import wns.musapa.pipeline.KorbitPipeline;
+import wns.musapa.task.MusapaTask;
 
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
