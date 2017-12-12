@@ -6,14 +6,17 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.telegram.telegrambots.ApiContextInitializer;
+import org.telegram.telegrambots.TelegramBotsApi;
+import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.exceptions.TelegramApiException;
+import wns.musapa.Constant;
 import wns.musapa.fetcher.CoinTickFetcher;
 import wns.musapa.model.CoinTick;
 
@@ -23,6 +26,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +53,14 @@ public class KimpTask implements Runnable {
 
     private Thread exchangeThread = null;
 
+    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmSS");
+
+    private KimpTelegramBot kimpTelegramBot = new KimpTelegramBot();
+
+    static {
+        ApiContextInitializer.init();
+    }
+
     public KimpTask(String coinCodeForBithumb, String coinCodeForBitstamp) {
         this.coinCodeForBithumb = coinCodeForBithumb;
         this.coinCodeForBitstamp = coinCodeForBitstamp;
@@ -56,30 +68,41 @@ public class KimpTask implements Runnable {
 
     @Override
     public void run() {
-        this.exchangeThread = new Thread(new ExchangeRateThread());
-        this.exchangeThread.start();
-        for (CoinTickFetcher coinTickFetcher : coinTickFetchers) {
-            fetchers.execute(new CoinFetcherThread(coinTickFetcher, 1000L));
-        }
+        try {
+            TelegramBotsApi botsApi = new TelegramBotsApi();
+            botsApi.registerBot(this.kimpTelegramBot);
 
-        while (!Thread.currentThread().isInterrupted()) {
-            while (!this.tickQueue.isEmpty()) {
-                CoinTick coinTick = this.tickQueue.poll();
-                this.latestCoinTicks.put(coinTick.getCode(), coinTick);
+            this.exchangeThread = new Thread(new ExchangeRateThread());
+            this.exchangeThread.start();
+            for (CoinTickFetcher coinTickFetcher : coinTickFetchers) {
+                fetchers.execute(new CoinFetcherThread(coinTickFetcher, 1000L));
+            }
 
-                if (isReadyToCalculate()) {
-                    updateKimp();
+            while (!Thread.currentThread().isInterrupted()) {
+                while (!this.tickQueue.isEmpty()) {
+                    CoinTick coinTick = this.tickQueue.poll();
+                    this.latestCoinTicks.put(coinTick.getCode(), coinTick);
+
+                    if (isReadyToCalculate()) {
+                        updateKimp();
+                    }
+                }
+
+                try {
+                    Thread.sleep(100L);
+                } catch (InterruptedException e) {
                 }
             }
-
-            try {
-                Thread.sleep(50L);
-            } catch (InterruptedException e) {
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        } finally {
+            if (fetchers != null) {
+                fetchers.shutdownNow();
+            }
+            if (exchangeThread != null) {
+                exchangeThread.interrupt();
             }
         }
-
-        fetchers.shutdownNow();
-        exchangeThread.interrupt();
     }
 
     private void updateKimp() {
@@ -88,10 +111,36 @@ public class KimpTask implements Runnable {
 
         double rate = getExchangeRate();
         double bitstampPrice = rate * bitstamp.getTradePrice();
-        this.kimpRate = (bithumb.getTradePrice() - bitstampPrice) / bitstampPrice;
+        this.kimpRate = calculateKimchi(bithumb.getTradePrice(), bitstampPrice);
 
-        LOGGER.info(String.format("KimpRate: %.5f / bitStamp: %f / bithumb: %f",
-                this.kimpRate, bitstampPrice, bithumb.getTradePrice()));
+        LOGGER.debug(printKimchi());
+
+        if (Math.abs(this.kimpRate) > 0.02) {
+            //TODO
+        }
+    }
+
+    private double calculateKimchi(double bithumb, double bitstampPrice) {
+        return (bithumb - bitstampPrice) / bitstampPrice;
+    }
+
+    private String printKimchi() {
+        CoinTick bitstamp = latestCoinTicks.get(coinCodeForBitstamp);
+        CoinTick bithumb = latestCoinTicks.get(coinCodeForBithumb);
+
+        double rate = getExchangeRate();
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("KimpRate: %.5f\n", calculateKimchi(bithumb.getTradePrice(), rate * bitstamp.getTradePrice())));
+        sb.append(String.format("Bithumb: KRW %f / %s\n", bithumb.getTradePrice(),
+                this.simpleDateFormat.format(new Date(bithumb.getTimestamp()))));
+        sb.append(String.format("Bitstamp: KRW %f / USD %f / Rate %f / %s\n",
+                rate * bitstamp.getTradePrice(),
+                bitstamp.getTradePrice(),
+                rate,
+                this.simpleDateFormat.format(new Date(bitstamp.getTimestamp()))));
+        return sb.toString();
     }
 
     public boolean isReadyToCalculate() {
@@ -115,21 +164,49 @@ public class KimpTask implements Runnable {
         this.coinTickFetchers.add(coinTickFetcher);
     }
 
-    class KimpTelegramBot extends TelegramLongPollingBot{
+    class KimpTelegramBot extends TelegramLongPollingBot {
+        Set<Long> users = new LinkedHashSet<>();
+
+        public void broadcast(String message) {
+            for (long user : users) {
+                send(user, message);
+            }
+        }
+
+        private void send(long user, String message) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(user);
+            msg.setText(message);
+            try {
+                execute(msg);
+            } catch (TelegramApiException e) {
+            }
+        }
 
         @Override
         public void onUpdateReceived(Update update) {
-
+            if (update.hasMessage() && update.getMessage().hasText()) {
+                String command = update.getMessage().getText();
+                if (command.equals("/hello")) {
+                    send(update.getMessage().getChatId(), "Hello! You can send me /kimchi ");
+                    users.add(update.getMessage().getChatId());
+                } else if (command.equals("/bye")) {
+                    send(update.getMessage().getChatId(), "Bye.");
+                    users.remove(update.getMessage().getChatId());
+                } else if (command.equals("/kimchi")) {
+                    send(update.getMessage().getChatId(), printKimchi());
+                }
+            }
         }
 
         @Override
         public String getBotUsername() {
-            return null;
+            return "kimchi_prem_bot";
         }
 
         @Override
         public String getBotToken() {
-            return null;
+            return Constant.KIMP_TELEGRAM_BOT_TOKEN;
         }
     }
 
@@ -151,9 +228,15 @@ public class KimpTask implements Runnable {
         public CloseableHttpClient getHttpClient() throws Exception {
             SSLContext sslcontext = SSLContext.getInstance("TLS");
             sslcontext.init(null, new TrustManager[]{new X509TrustManager() {
-                public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
-                public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}
-                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+                }
+
+                public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
 
             }}, new java.security.SecureRandom());
             return HttpClientBuilder.create().setSSLContext(sslcontext).setSSLHostnameVerifier(new HostnameVerifier() {

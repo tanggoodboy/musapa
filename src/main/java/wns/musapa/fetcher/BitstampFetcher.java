@@ -40,7 +40,7 @@ public class BitstampFetcher implements CoinTickFetcher {
             }
 
             JsonObject tickJson = this.jsonParser.parse(sb.toString()).getAsJsonObject();
-            long timestamp = Long.parseLong(tickJson.get("timestamp").getAsString());
+            long timestamp = Long.parseLong(tickJson.get("timestamp").getAsString()) * 1000;
             double price = Double.parseDouble(tickJson.get("last").getAsString());
             return new CoinTick(this.coinCode, timestamp, price);
         }
