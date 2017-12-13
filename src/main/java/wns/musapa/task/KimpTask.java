@@ -49,7 +49,6 @@ public class KimpTask implements Runnable {
     private Object exchangeLock = new Object();
 
     private double exchangeRate = 1080; // 1 USD to KRW
-    private double kimpRate = 0;
 
     private Thread exchangeThread = null;
 
@@ -69,12 +68,15 @@ public class KimpTask implements Runnable {
     @Override
     public void run() {
         try {
+            LOGGER.info("Starting Telegram bot...");
             TelegramBotsApi botsApi = new TelegramBotsApi();
             botsApi.registerBot(this.kimpTelegramBot);
 
+            LOGGER.info("Starting exchange rate thread...");
             this.exchangeThread = new Thread(new ExchangeRateThread());
             this.exchangeThread.start();
             for (CoinTickFetcher coinTickFetcher : coinTickFetchers) {
+                LOGGER.info("Starting {} thread...", coinTickFetcher.getClass().getSimpleName());
                 fetchers.execute(new CoinFetcherThread(coinTickFetcher, 1000L));
             }
 
@@ -111,13 +113,9 @@ public class KimpTask implements Runnable {
 
         double rate = getExchangeRate();
         double bitstampPrice = rate * bitstamp.getTradePrice();
-        this.kimpRate = calculateKimchi(bithumb.getTradePrice(), bitstampPrice);
+        double kimpRate = calculateKimchi(bithumb.getTradePrice(), bitstampPrice);
 
-        LOGGER.debug(printKimchi());
-
-        if (Math.abs(this.kimpRate) > 0.02) {
-            //TODO
-        }
+        this.kimpTelegramBot.broadcastRate(printKimchi(), kimpRate);
     }
 
     private double calculateKimchi(double bithumb, double bitstampPrice) {
@@ -164,12 +162,38 @@ public class KimpTask implements Runnable {
         this.coinTickFetchers.add(coinTickFetcher);
     }
 
-    class KimpTelegramBot extends TelegramLongPollingBot {
-        Set<Long> users = new LinkedHashSet<>();
+    class KimpUser {
+        long userId;
+        long lastMessageAt = 0;
+        double alertRate = 0;
 
-        public void broadcast(String message) {
-            for (long user : users) {
-                send(user, message);
+        KimpUser() {
+        }
+
+        @Override
+        public String toString() {
+            return "KimpUser{" +
+                    "userId=" + userId +
+                    ", lastMessageAt=" + lastMessageAt +
+                    ", alertRate=" + alertRate +
+                    '}';
+        }
+    }
+
+    class KimpTelegramBot extends TelegramLongPollingBot {
+        static final int MESSAGE_INTERVAL = 3 * 60 * 1000;
+        Map<Long, KimpUser> users = new HashMap<>();
+
+        public void broadcastRate(String message, double rate) {
+            for (KimpUser user : users.values()) {
+                if (user.alertRate > 0
+                        && Math.abs(rate) >= user.alertRate
+                        && user.lastMessageAt + MESSAGE_INTERVAL <= System.currentTimeMillis()) { // send only every 5 min
+                    send(user.userId, message);
+                    user.lastMessageAt = System.currentTimeMillis();
+                    LOGGER.info("Message sent to {} since user.alertRate={} and rate={}",
+                            user.userId, user.alertRate, rate);
+                }
             }
         }
 
@@ -186,15 +210,42 @@ public class KimpTask implements Runnable {
         @Override
         public void onUpdateReceived(Update update) {
             if (update.hasMessage() && update.getMessage().hasText()) {
-                String command = update.getMessage().getText();
+                String[] tokens = update.getMessage().getText().split(" ");
+                String command = tokens[0].trim();
                 if (command.equals("/hello")) {
                     send(update.getMessage().getChatId(), "Hello! You can send me /kimchi ");
-                    users.add(update.getMessage().getChatId());
+                    send(update.getMessage().getChatId(), "Type /bye if you want to unsubscribe.");
+
+                    KimpUser kimpUser = null;
+                    if ((kimpUser = users.get(update.getMessage().getChatId())) == null) {
+                        kimpUser = new KimpUser();
+                        kimpUser.userId = update.getMessage().getChatId();
+                        users.put(kimpUser.userId, kimpUser);
+                    }
+
+                    if (tokens.length >= 2) {
+                        try {
+                            double alertRate = Double.parseDouble(tokens[1].trim());
+                            kimpUser.alertRate = alertRate;
+                            send(update.getMessage().getChatId(), "Great. I will send you an alert when rate exceeds/drops " + alertRate + "\nTo avoid alert flooding, alerts will be sent with 3 minutes gap.");
+                            LOGGER.info("User added/updated: {} / total: {} users", kimpUser.toString(), users.size());
+                        } catch (Exception e) {
+                            send(update.getMessage().getChatId(), "I don't understand your alert rate.");
+                        }
+                    }
                 } else if (command.equals("/bye")) {
                     send(update.getMessage().getChatId(), "Bye.");
                     users.remove(update.getMessage().getChatId());
+                    LOGGER.info("User left. total: {} users", users.size());
                 } else if (command.equals("/kimchi")) {
                     send(update.getMessage().getChatId(), printKimchi());
+                } else if (command.equals("/me")){
+                    KimpUser user = users.get(update.getMessage().getChatId());
+                    if(user == null){
+                        send(update.getMessage().getChatId(), "I don't know you. Say /hello");
+                    } else {
+                        send(update.getMessage().getChatId(), "Gotcha. Your alert rate is " + user.alertRate +"\nIf you want to change it, just /hello (rate) me again.");
+                    }
                 }
             }
         }
