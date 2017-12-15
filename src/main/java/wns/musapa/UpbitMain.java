@@ -3,7 +3,10 @@ package wns.musapa;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wns.musapa.model.code.UpbitCoinCode;
-import wns.musapa.upbit.*;
+import wns.musapa.upbit.UpbitDispatcher;
+import wns.musapa.upbit.UpbitPipeline;
+import wns.musapa.upbit.UpbitTelegramReporter;
+import wns.musapa.upbit.UpbitWebsocketClientLauncher;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,7 +22,7 @@ public class UpbitMain {
         UpbitDispatcher dispatcher = new UpbitDispatcher();
         websocketClientLauncher.setUpbitDispatcher(dispatcher);
 
-        UpbitTelegramReporter reporter = new UpbitTelegramReporter();
+        UpbitTelegramReporter reporter = new UpbitTelegramReporter(DEFAULT_WINDOW_SIZE);
 
         UpbitCoinCode[] interest = UpbitCoinCode.values();
         UpbitPipeline[] pipelines = new UpbitPipeline[interest.length];
