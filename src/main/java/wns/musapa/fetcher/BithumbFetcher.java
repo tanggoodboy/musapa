@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import wns.musapa.model.CoinTick;
+import wns.musapa.model.code.BithumbCoinCode;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -18,12 +19,12 @@ public class BithumbFetcher implements CoinTickFetcher {
     private static final String URL = "https://api.bithumb.com/public/ticker/%s";
     private HttpClient httpClient = null;
 
-    private String coinCode = "btcusd";
+    private BithumbCoinCode coinCode;
 
     private JsonParser jsonParser = null;
     private HttpGet request = null;
 
-    public BithumbFetcher(String coinCode) {
+    public BithumbFetcher(BithumbCoinCode coinCode) {
         this.coinCode = coinCode;
     }
 

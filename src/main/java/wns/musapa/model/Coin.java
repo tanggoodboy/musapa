@@ -45,17 +45,17 @@ public abstract class Coin {
         gson = gsonBuilder.create();
     }
 
-    private String code;
+    private CoinCode code;
 
-    public Coin(String code) {
+    public Coin(CoinCode code) {
         this.code = code;
     }
 
-    public String getCode() {
+    public CoinCode getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(CoinCode code) {
         this.code = code;
     }
 

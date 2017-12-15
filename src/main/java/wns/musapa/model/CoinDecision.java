@@ -6,7 +6,7 @@ public class CoinDecision extends Coin {
     private double targetPrice = 0;
     private double targetVolume = 0;
 
-    public CoinDecision(String code) {
+    public CoinDecision(CoinCode code) {
         super(code);
     }
 

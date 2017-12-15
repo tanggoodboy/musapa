@@ -2,6 +2,8 @@ package wns.musapa;
 
 import wns.musapa.fetcher.BithumbFetcher;
 import wns.musapa.fetcher.BitstampFetcher;
+import wns.musapa.model.code.BithumbCoinCode;
+import wns.musapa.model.code.BitstampCoinCode;
 import wns.musapa.task.KimpTask;
 
 public class KimpAlertMain {
@@ -9,8 +11,8 @@ public class KimpAlertMain {
         System.out.println("Hello");
 
         KimpTask kimpTask = new KimpTask("BTC","btcusd");
-        kimpTask.addCoinTickFetcher(new BitstampFetcher("btcusd"));
-        kimpTask.addCoinTickFetcher(new BithumbFetcher("BTC"));
+        kimpTask.addCoinTickFetcher(new BitstampFetcher(BitstampCoinCode.BTC));
+        kimpTask.addCoinTickFetcher(new BithumbFetcher(BithumbCoinCode.BTC));
 
         final Thread t = new Thread(kimpTask);
         t.start();

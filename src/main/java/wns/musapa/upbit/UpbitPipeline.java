@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wns.musapa.UpbitMain;
 import wns.musapa.model.CoinAnalysis;
+import wns.musapa.model.CoinCode;
 import wns.musapa.model.CoinTick;
 import wns.musapa.model.TradePrice;
 
@@ -15,18 +16,18 @@ public class UpbitPipeline implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpbitPipeline.class);
     private Queue<CoinTick> coinTicks = new LinkedBlockingQueue<>();
 
-    private final String coinCode;
+    private final CoinCode coinCode;
     private final long interval;
     private final long windowSize;
     private CoinAnalysis coinAnalysis;
 
     private UpbitTelegramReporter reporter = null;
 
-    public UpbitPipeline(String coinCode) {
+    public UpbitPipeline(CoinCode coinCode) {
         this(coinCode, UpbitMain.DEFAULT_INTERVAL, UpbitMain.DEFAULT_WINDOW_SIZE);
     }
 
-    public UpbitPipeline(String coinCode, long interval, long windowSize) {
+    public UpbitPipeline(CoinCode coinCode, long interval, long windowSize) {
         this.coinCode = coinCode;
         this.interval = interval;
         this.windowSize = windowSize;
@@ -105,7 +106,7 @@ public class UpbitPipeline implements Runnable {
         this.reporter = reporter;
     }
 
-    public String getCoinCode() {
+    public CoinCode getCoinCode() {
         return coinCode;
     }
 }

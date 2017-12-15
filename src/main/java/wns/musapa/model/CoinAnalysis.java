@@ -9,7 +9,7 @@ public class CoinAnalysis extends Coin {
     private int count = 0;
     private double rateOfChange = 0;
 
-    public CoinAnalysis(String coinCode) {
+    public CoinAnalysis(CoinCode coinCode) {
         super(coinCode);
         this.count = 0;
     }

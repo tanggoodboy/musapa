@@ -8,7 +8,7 @@ import java.util.Queue;
 public class CoinWindow extends Coin {
     private Queue<TradePrice> prices;
 
-    public CoinWindow(String coinCode){
+    public CoinWindow(CoinCode coinCode){
         super(coinCode);
         this.prices = new LinkedList<>();
     }

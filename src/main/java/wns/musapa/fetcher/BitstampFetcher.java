@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import wns.musapa.model.CoinTick;
+import wns.musapa.model.code.BitstampCoinCode;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -19,12 +20,12 @@ public class BitstampFetcher implements CoinTickFetcher {
 
     private HttpClient httpClient = null;
 
-    private String coinCode = "btcusd";
+    private BitstampCoinCode coinCode;
 
     private JsonParser jsonParser = null;
     private HttpGet request = null;
 
-    public BitstampFetcher(String coinCode) {
+    public BitstampFetcher(BitstampCoinCode coinCode) {
         this.coinCode = coinCode;
     }
 

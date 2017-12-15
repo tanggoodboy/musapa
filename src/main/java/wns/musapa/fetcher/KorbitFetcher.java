@@ -42,7 +42,8 @@ public class KorbitFetcher implements CoinTickFetcher {
             JsonObject tickJson = this.jsonParser.parse(sb.toString()).getAsJsonObject();
             long timestamp = tickJson.get("timestamp").getAsLong();
             double price = Double.parseDouble(tickJson.get("last").getAsString());
-            return new CoinTick(this.coinCode, timestamp, price);
+            // return new CoinTick(this.coinCode, timestamp, price);
+            return null; // TODO
         }
     }
 

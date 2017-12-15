@@ -18,6 +18,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import wns.musapa.Constant;
 import wns.musapa.fetcher.CoinTickFetcher;
+import wns.musapa.model.CoinCode;
 import wns.musapa.model.CoinTick;
 
 import javax.net.ssl.*;
@@ -41,7 +42,7 @@ public class KimpTask implements Runnable {
 
     private List<CoinTickFetcher> coinTickFetchers = new ArrayList<>();
 
-    private Map<String, CoinTick> latestCoinTicks = new HashMap<>();
+    private Map<CoinCode, CoinTick> latestCoinTicks = new HashMap<>();
 
     private String coinCodeForBitstamp = "btcusd";
     private String coinCodeForBithumb = "";
@@ -239,12 +240,12 @@ public class KimpTask implements Runnable {
                     LOGGER.info("User left. total: {} users", users.size());
                 } else if (command.equals("/kimchi")) {
                     send(update.getMessage().getChatId(), printKimchi());
-                } else if (command.equals("/me")){
+                } else if (command.equals("/me")) {
                     KimpUser user = users.get(update.getMessage().getChatId());
-                    if(user == null){
+                    if (user == null) {
                         send(update.getMessage().getChatId(), "I don't know you. Say /hello");
                     } else {
-                        send(update.getMessage().getChatId(), "Gotcha. Your alert rate is " + user.alertRate +"\nIf you want to change it, just /hello (rate) me again.");
+                        send(update.getMessage().getChatId(), "Gotcha. Your alert rate is " + user.alertRate + "\nIf you want to change it, just /hello (rate) me again.");
                     }
                 }
             }

@@ -11,6 +11,8 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 import wns.musapa.Constant;
 import wns.musapa.UpbitMain;
 import wns.musapa.model.CoinAnalysis;
+import wns.musapa.model.CoinCode;
+import wns.musapa.model.code.UpbitCoinCode;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -20,7 +22,7 @@ public class UpbitTelegramReporter implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpbitTelegramReporter.class);
     private Map<Long, UserInfo> users = new ConcurrentHashMap<>();
     private UpbitTelegramBot upbitTelegramBot = new UpbitTelegramBot();
-    private Map<String, CoinAnalysis> coinAnalysisMap = new ConcurrentHashMap<>();
+    private Map<CoinCode, CoinAnalysis> coinAnalysisMap = new ConcurrentHashMap<>();
     private SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd'T'HHmmss");
 
     private final long windowSize;
@@ -62,7 +64,7 @@ public class UpbitTelegramReporter implements Runnable {
 
             // Check alert rate for all coins
             Double alertRate = user.alertRate;
-            if(alertRate != null && user.alertRate <= coinAnalysis.getRateOfChange() && user.isReadyForAlertAlert(coinAnalysis.getCode())){
+            if (alertRate != null && user.alertRate <= coinAnalysis.getRateOfChange() && user.isReadyForAlertAlert(coinAnalysis.getCode())) {
                 this.upbitTelegramBot.send(user.id, print(coinAnalysis));
                 user.updateLastAlertAlertAt(coinAnalysis.getCode());
             }
@@ -71,7 +73,7 @@ public class UpbitTelegramReporter implements Runnable {
 
     private String print(CoinAnalysis coinAnalysis) {
         StringBuilder sb = new StringBuilder();
-        UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByUpbitCode(coinAnalysis.getCode());
+        UpbitCoinCode upbitCoinCode = (UpbitCoinCode) coinAnalysis.getCode();
         sb.append(upbitCoinCode.getKorean() + " (" + upbitCoinCode.name() + ")\n");
         sb.append(String.format("Rate: %f\n", coinAnalysis.getRateOfChange()));
         sb.append(String.format("Close: %f (%s)\n", coinAnalysis.getClose().getPrice(), sdf.format(new Date(coinAnalysis.getClose().getTimestamp()))));
@@ -101,7 +103,7 @@ public class UpbitTelegramReporter implements Runnable {
         // Print top 5
         for (int i = 0; i < 5 && i < analysisList.size(); i++) {
             CoinAnalysis analysis = analysisList.get(i);
-            UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByUpbitCode(analysis.getCode());
+            UpbitCoinCode upbitCoinCode = (UpbitCoinCode) analysis.getCode();
             sb.append(String.format("%s(%s): %.0f (%.4f%%) %s\n",
                     upbitCoinCode.getKorean(), upbitCoinCode.name(), analysis.getClose().getPrice(),
                     analysis.getRateOfChange() * 100, sdf.format(new Date(analysis.getClose().getTimestamp()))));
@@ -110,7 +112,7 @@ public class UpbitTelegramReporter implements Runnable {
         // Print bottom 5
         for (int i = analysisList.size() - Math.min(4, analysisList.size() - 1); i < analysisList.size(); i++) {
             CoinAnalysis analysis = analysisList.get(i);
-            UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByUpbitCode(analysis.getCode());
+            UpbitCoinCode upbitCoinCode = (UpbitCoinCode) analysis.getCode();
             sb.append(String.format("%s(%s): %.0f (%.4f%%) %s\n",
                     upbitCoinCode.getKorean(), upbitCoinCode.name(), analysis.getClose().getPrice(),
                     analysis.getRateOfChange() * 100, sdf.format(new Date(analysis.getClose().getTimestamp()))));
@@ -119,16 +121,15 @@ public class UpbitTelegramReporter implements Runnable {
     }
 
     private String printMore(UserInfo userInfo, String[] tokens) {
-        try{
-            String code = tokens[1].trim();
-            UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByName(code);
+        try {
+            UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByName(tokens[1].trim());
             CoinAnalysis analysis = coinAnalysisMap.get(upbitCoinCode.getCode());
-            if(analysis == null){
+            if (analysis == null) {
                 return "Not enough data, just yet.";
             } else {
                 return print(analysis);
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             return "Not sure I understand. Try /help";
         }
@@ -149,11 +150,11 @@ public class UpbitTelegramReporter implements Runnable {
 
     class UserInfo {
         long id;
-        Map<String, Double> incRateThreshold;
-        Map<String, Double> decRateThreshold;
-        Map<String, Long> lastIncAlertAt;
-        Map<String, Long> lastDecAlertAt;
-        Map<String, Long> lastAlertAlertAt;
+        Map<CoinCode, Double> incRateThreshold;
+        Map<CoinCode, Double> decRateThreshold;
+        Map<CoinCode, Long> lastIncAlertAt;
+        Map<CoinCode, Long> lastDecAlertAt;
+        Map<CoinCode, Long> lastAlertAlertAt;
         long alertInterval = 3 * 60 * 1000L;
         public Double alertRate = null;
 
@@ -166,30 +167,30 @@ public class UpbitTelegramReporter implements Runnable {
             this.lastAlertAlertAt = new HashMap<>();
         }
 
-        public boolean isReadyForIncAlert(String code) {
+        public boolean isReadyForIncAlert(CoinCode code) {
             Long last = lastIncAlertAt.get(code);
             return last == null || last + alertInterval <= System.currentTimeMillis();
         }
 
-        public void updateLastIncAlertAt(String code) {
+        public void updateLastIncAlertAt(CoinCode code) {
             lastIncAlertAt.put(code, System.currentTimeMillis());
         }
 
-        public boolean isReadyForDecAlert(String code) {
+        public boolean isReadyForDecAlert(CoinCode code) {
             Long last = lastDecAlertAt.get(code);
             return last == null || last + alertInterval <= System.currentTimeMillis();
         }
 
-        public void updateLastDecAlertAt(String code) {
+        public void updateLastDecAlertAt(CoinCode code) {
             lastDecAlertAt.put(code, System.currentTimeMillis());
         }
 
-        public boolean isReadyForAlertAlert(String code) {
+        public boolean isReadyForAlertAlert(CoinCode code) {
             Long last = lastAlertAlertAt.get(code);
             return last == null || last + alertInterval <= System.currentTimeMillis();
         }
 
-        public void updateLastAlertAlertAt(String code){
+        public void updateLastAlertAlertAt(CoinCode code) {
             lastAlertAlertAt.put(code, System.currentTimeMillis());
         }
 
@@ -302,15 +303,15 @@ public class UpbitTelegramReporter implements Runnable {
 
         private String printRules(UserInfo userInfo) {
             StringBuilder sb = new StringBuilder();
-            for(Map.Entry<String, Double> entry : userInfo.incRateThreshold.entrySet()){
-                UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByUpbitCode(entry.getKey());
+            for (Map.Entry<CoinCode, Double> entry : userInfo.incRateThreshold.entrySet()) {
+                UpbitCoinCode upbitCoinCode = (UpbitCoinCode) entry.getKey();
                 sb.append(String.format("%s(%s): INC %f\n", upbitCoinCode.getKorean(), upbitCoinCode.getCode(), entry.getValue()));
             }
-            for(Map.Entry<String, Double> entry : userInfo.decRateThreshold.entrySet()){
-                UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByUpbitCode(entry.getKey());
+            for (Map.Entry<CoinCode, Double> entry : userInfo.decRateThreshold.entrySet()) {
+                UpbitCoinCode upbitCoinCode = (UpbitCoinCode) entry.getKey();
                 sb.append(String.format("%s(%s): DEC %f\n", upbitCoinCode.getKorean(), upbitCoinCode.getCode(), entry.getValue()));
             }
-            if(userInfo.alertRate != null){
+            if (userInfo.alertRate != null) {
                 sb.append(String.format("Alert at " + userInfo.alertRate));
             }
             return sb.toString();
@@ -351,10 +352,10 @@ public class UpbitTelegramReporter implements Runnable {
                 String condition = tokens[2].trim();
                 Double rate = Double.parseDouble(tokens[3].trim());
                 if (condition.equalsIgnoreCase("inc")) {
-                    userInfo.incRateThreshold.put(upbitCoinCode.getCode(), rate);
+                    userInfo.incRateThreshold.put(upbitCoinCode, rate);
                     return String.format("%s %s %f added.", coinCode, condition, rate);
                 } else if (condition.equalsIgnoreCase("dec")) {
-                    userInfo.decRateThreshold.put(upbitCoinCode.getCode(), rate);
+                    userInfo.decRateThreshold.put(upbitCoinCode, rate);
                     return String.format("%s %s %f added.", coinCode, condition, rate);
                 } else {
                     throw new Exception("Invalid condition.");

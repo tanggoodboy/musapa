@@ -1,6 +1,8 @@
-package wns.musapa.upbit;
+package wns.musapa.model.code;
 
-public enum UpbitCoinCode {
+import wns.musapa.model.CoinCode;
+
+public enum UpbitCoinCode implements CoinCode {
     BTC("CRIX.UPBIT.KRW-BTC", "비트코인"),
     DASH("CRIX.UPBIT.KRW-DASH", "대시"),
     ETH("CRIX.UPBIT.KRW-ETH", "이더리움"),
@@ -61,18 +63,18 @@ public enum UpbitCoinCode {
         return sb.toString();
     }
 
-    public static UpbitCoinCode parseByUpbitCode(String upbitCode) {
+    public static UpbitCoinCode parseByName(String coinCode) {
         for (UpbitCoinCode code : UpbitCoinCode.values()) {
-            if (code.getCode().equalsIgnoreCase(upbitCode)) {
+            if (code.name().equalsIgnoreCase(coinCode)) {
                 return code;
             }
         }
         return null;
     }
 
-    public static UpbitCoinCode parseByName(String coinCode) {
+    public static UpbitCoinCode parseByCode(String coinCode) {
         for (UpbitCoinCode code : UpbitCoinCode.values()) {
-            if (code.name().equalsIgnoreCase(coinCode)) {
+            if (code.getCode().equalsIgnoreCase(coinCode)) {
                 return code;
             }
         }

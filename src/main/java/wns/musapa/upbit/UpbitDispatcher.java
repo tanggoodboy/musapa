@@ -2,6 +2,7 @@ package wns.musapa.upbit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wns.musapa.model.CoinCode;
 import wns.musapa.model.CoinTick;
 
 import java.util.HashMap;
@@ -12,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class UpbitDispatcher implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpbitDispatcher.class);
     private BlockingQueue<CoinTick> unprocessedCoinTicks = new LinkedBlockingQueue<>();
-    private Map<String, UpbitPipeline> coinPipelines = new HashMap<>();
+    private Map<CoinCode, UpbitPipeline> coinPipelines = new HashMap<>();
 
     @Override
     public void run() {
@@ -43,7 +44,7 @@ public class UpbitDispatcher implements Runnable {
         }
     }
 
-    public void addCoinPipeline(String coinCode, UpbitPipeline pipeline) {
+    public void addCoinPipeline(CoinCode coinCode, UpbitPipeline pipeline) {
         this.coinPipelines.put(coinCode, pipeline);
     }
 }
