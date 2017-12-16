@@ -123,7 +123,7 @@ public class UpbitTelegramReporter implements Runnable {
     private String printMore(UserInfo userInfo, String[] tokens) {
         try {
             UpbitCoinCode upbitCoinCode = UpbitCoinCode.parseByName(tokens[1].trim());
-            CoinAnalysis analysis = coinAnalysisMap.get(upbitCoinCode.getCode());
+            CoinAnalysis analysis = coinAnalysisMap.get(upbitCoinCode);
             if (analysis == null) {
                 return "Not enough data, just yet.";
             } else {
