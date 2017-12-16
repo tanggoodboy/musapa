@@ -29,6 +29,9 @@ public class UpbitWebsocketClientLauncher implements Runnable {
                     if (!this.webSocketClient.isClosed()) {
                         this.webSocketClient.closeBlocking();
                     }
+                    // Make new client (old client is not reusable)
+                    this.webSocketClient = new UpbitWebsocketClient();
+                    this.webSocketClient.setUpbitDispatcher(this.upbitDispatcher);
                     this.webSocketClient.connectBlocking();
                     LOGGER.info("Reconnected.");
                 }

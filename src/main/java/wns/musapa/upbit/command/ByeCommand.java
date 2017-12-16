@@ -1,9 +1,9 @@
 package wns.musapa.upbit.command;
 
-import wns.musapa.upbit.TelegramUser;
-import wns.musapa.upbit.TelegramUsers;
+import wns.musapa.upbit.telegram.TelegramUser;
+import wns.musapa.upbit.telegram.TelegramUsers;
 
-public class ByeCommand extends AbstractTelegramCommand{
+public class ByeCommand implements TelegramCommand {
     @Override
     public String getHelp() {
         return "Deletes registered user information.";

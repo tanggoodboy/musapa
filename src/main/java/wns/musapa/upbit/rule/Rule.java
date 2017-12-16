@@ -1,9 +1,18 @@
 package wns.musapa.upbit.rule;
 
-public interface Rule {
-    boolean isFired(double actual);
+import wns.musapa.model.CoinAnalysis;
+import wns.musapa.model.CoinCode;
 
-    interface Handler{
-        String handle();
-    }
+import java.util.Map;
+
+public interface Rule {
+    boolean isMatch(CoinAnalysis coinAnalysis);
+
+    long getLastPushAt();
+
+    String fire(CoinAnalysis coinAnalysis);
+
+    void updateLastPushAtToNow();
+
+    String toString();
 }

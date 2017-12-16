@@ -3,12 +3,13 @@ package wns.musapa.upbit.command;
 import wns.musapa.model.CoinAnalysis;
 import wns.musapa.model.code.UpbitCoinCode;
 import wns.musapa.upbit.CoinAnalysisLog;
-import wns.musapa.upbit.TelegramUser;
+import wns.musapa.upbit.telegram.TelegramUser;
+import wns.musapa.upbit.UpbitUtil;
 
-public class MoreCommand extends AbstractTelegramCommand {
+public class MoreCommand implements TelegramCommand {
     @Override
     public String getHelp() {
-        return "Prints coin price details. Usage: /more_[coinCode]  Example: /more_btc to print bitcoin.";
+        return "Prints coin price details. Usage: /more [coinCode]  Example: /more btc to print bitcoin.";
     }
 
     @Override
@@ -27,7 +28,7 @@ public class MoreCommand extends AbstractTelegramCommand {
         if (analysis == null) {
             return "Not enough information is collected, just yet, for " + coinCode.name();
         } else {
-            return print(analysis);
+            return UpbitUtil.print(analysis);
         }
     }
 

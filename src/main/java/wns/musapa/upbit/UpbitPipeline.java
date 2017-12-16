@@ -7,6 +7,7 @@ import wns.musapa.model.CoinAnalysis;
 import wns.musapa.model.CoinCode;
 import wns.musapa.model.CoinTick;
 import wns.musapa.model.TradePrice;
+import wns.musapa.upbit.telegram.UpbitTelegramReporter;
 
 import java.util.Iterator;
 import java.util.Queue;
@@ -84,7 +85,7 @@ public class UpbitPipeline implements Runnable {
 
             double rate = (coinAnalysis.getClose().getPrice() - coinAnalysis.getOpen().getPrice())
                     / coinAnalysis.getOpen().getPrice();
-            coinAnalysis.setRateOfChange(rate);
+            coinAnalysis.setRateOfChange(rate * 100); // in percentage
 
             if (reporter != null) {
                 reporter.report(coinAnalysis);

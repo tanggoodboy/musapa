@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import wns.musapa.model.code.UpbitCoinCode;
 import wns.musapa.upbit.UpbitDispatcher;
 import wns.musapa.upbit.UpbitPipeline;
-import wns.musapa.upbit.UpbitTelegramReporter;
+import wns.musapa.upbit.telegram.UpbitTelegramReporter;
 import wns.musapa.upbit.UpbitWebsocketClientLauncher;
 
 import java.util.concurrent.ExecutorService;
@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 
 public class UpbitMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpbitMain.class);
-    public static final long DEFAULT_INTERVAL = 10 * 1000L;
+    public static final long DEFAULT_INTERVAL = 5 * 1000L;
     public static final long DEFAULT_WINDOW_SIZE = 2 * 60 * 1000L;
 
     public static void main(String[] args) throws Exception {

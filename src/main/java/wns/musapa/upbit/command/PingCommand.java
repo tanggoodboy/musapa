@@ -1,8 +1,8 @@
 package wns.musapa.upbit.command;
 
-import wns.musapa.upbit.TelegramUser;
+import wns.musapa.upbit.telegram.TelegramUser;
 
-public class PingCommand extends AbstractTelegramCommand{
+public class PingCommand implements TelegramCommand {
     @Override
     public String getHelp() {
         return "You say /ping, I say /pong";
