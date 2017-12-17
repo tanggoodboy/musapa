@@ -8,7 +8,9 @@ public class AlertDelCommand implements TelegramCommand {
 
     @Override
     public String getHelp() {
-        return "Usage: /alertdel [coinCode] [rise|fall]";
+        return "Usage: /alertdel [coinCode(coinCodes separated by , or * for all)] [rise|fall]\n" +
+                "E.g.: /alertdel * rise \n" +
+                "E.g.: /alertdel btc,xrp rise ";
     }
 
     @Override
@@ -26,7 +28,11 @@ public class AlertDelCommand implements TelegramCommand {
         if (tokens[1].equalsIgnoreCase("*")) {
             coinCodes = UpbitCoinCode.values();
         } else {
-            coinCodes = new CoinCode[]{UpbitCoinCode.parseByName(tokens[1])};
+            String[] coinTokens = tokens[1].split(",");
+            coinCodes = new CoinCode[coinTokens.length];
+            for (int i = 0; i < coinTokens.length; i++) {
+                coinCodes[i] = UpbitCoinCode.parseByName(coinTokens[i]);
+            }
         }
 
         // Del rules

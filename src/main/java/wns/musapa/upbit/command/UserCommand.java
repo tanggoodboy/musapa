@@ -35,8 +35,8 @@ public class UserCommand implements TelegramCommand {
         if (tokens[1].equalsIgnoreCase("reset")) {
             user.reset();
             return "Done.";
-        } else if (tokens[2].equalsIgnoreCase("push")) {
-            long interval = Long.parseLong(tokens[3]);
+        } else if (tokens[1].equalsIgnoreCase("push")) {
+            long interval = Long.parseLong(tokens[2]);
             user.setPushInterval(interval);
             return "Push interval updated.";
         }

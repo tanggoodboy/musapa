@@ -2,14 +2,16 @@ package wns.musapa.upbit.command;
 
 import wns.musapa.model.CoinCode;
 import wns.musapa.model.code.UpbitCoinCode;
-import wns.musapa.upbit.telegram.TelegramUser;
 import wns.musapa.upbit.rule.RateOfChangeRule;
+import wns.musapa.upbit.telegram.TelegramUser;
 
 public class AlertAddCommand implements TelegramCommand {
 
     @Override
     public String getHelp() {
-        return "Usage: /alertadd [coinCode] [rise|fall] 1.24";
+        return "Usage: /alertadd [coinCode(coinCodes separated by , or * for all)] [rise|fall] [rateOfChange]\n" +
+                "E.g.: /alertadd * rise 2.00\n" +
+                "E.g.: /alertadd btc,xrp rise 2.00";
     }
 
     @Override
@@ -27,7 +29,11 @@ public class AlertAddCommand implements TelegramCommand {
         if (tokens[1].equalsIgnoreCase("*")) {
             coinCodes = UpbitCoinCode.values();
         } else {
-            coinCodes = new CoinCode[]{UpbitCoinCode.parseByName(tokens[1])};
+            String[] coinTokens = tokens[1].split(",");
+            coinCodes = new CoinCode[coinTokens.length];
+            for (int i = 0; i < coinTokens.length; i++) {
+                coinCodes[i] = UpbitCoinCode.parseByName(coinTokens[i]);
+            }
         }
 
         double rateOfChange = Double.parseDouble(tokens[3]);
