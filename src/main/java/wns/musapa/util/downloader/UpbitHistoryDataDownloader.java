@@ -10,6 +10,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wns.musapa.model.code.UpbitCoinCode;
 
 import java.io.File;
 import java.io.InputStreamReader;
@@ -20,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class UpbitHistoryDataDownloader {
+public class UpbitHistoryDataDownloader implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpbitHistoryDataDownloader.class);
     private static final String URL = "https://crix-api-endpoint.upbit.com/v1/crix/candles/minutes/1?code=%s&count=200&to=%sT%s.000Z";
 
@@ -29,11 +32,24 @@ public class UpbitHistoryDataDownloader {
     private SimpleDateFormat simpleTimeFormat = new SimpleDateFormat("HH:mm:ss");
     private SimpleDateFormat sdfUpbit = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    public UpbitHistoryDataDownloader() {
+    private final String code;
+    private final String sDate;
 
+    public UpbitHistoryDataDownloader(String code, String sDate) {
+        this.code = code;
+        this.sDate = sDate;
     }
 
-    public void run(String code, String sDate) throws Exception {
+    @Override
+    public void run() {
+        try {
+            download(code, sDate);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    private void download(String code, String sDate) throws Exception {
         HttpClient httpClient = HttpClientBuilder.create().build();
         Date currentDate = simpleDateFormat.parse(sDate);
         Date now = new Date();
@@ -86,8 +102,15 @@ public class UpbitHistoryDataDownloader {
 
     public static void main(String[] args) throws Exception {
 
-        UpbitHistoryDataDownloader downloader = new UpbitHistoryDataDownloader();
-        downloader.run("CRIX.UPBIT.KRW-ADA", "2017-09-26"); // Sept 26 is the earliest possible.
+        // UpbitHistoryDataDownloader downloader = new UpbitHistoryDataDownloader();
+        UpbitCoinCode[] coinCodes = UpbitCoinCode.values();
+
+        ExecutorService executors = Executors.newCachedThreadPool();
+
+        for (UpbitCoinCode coinCode : coinCodes) {
+            executors.execute(new UpbitHistoryDataDownloader(coinCode.getCode(), "2017-11-01"));
+        }
+
         System.out.println("Done");
     }
 }
