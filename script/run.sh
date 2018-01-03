@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=/home/pi/musapa
-START_COMMAND="java -cp musapa-1.0-SNAPSHOT-jar-with-dependencies.jar wns.musapa.UpbitMain -Dlog4j.configuration=file:/home/pi/musapa/log4j.properties"
+START_COMMAND="java -cp musapa-1.0-SNAPSHOT-jar-with-dependencies.jar UpbitMain -Dlog4j.configuration=file:/home/pi/musapa/log4j.properties"
 PID_FILE=$BASE_DIR/musapa.pid
 LOG_DIR=$BASE_DIR/log
 
