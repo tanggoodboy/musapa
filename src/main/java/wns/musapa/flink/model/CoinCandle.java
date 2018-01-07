@@ -70,4 +70,8 @@ public class CoinCandle extends Coin {
         sb.append(String.format("High: %,d (%s)\n", (long) getHigh().getPrice(), sdf.format(new Date(getHigh().getTimestamp()))));
         return sb.toString();
     }
+
+    public static String printTimestamp(long timestamp) {
+        return sdf.format(new Date(timestamp));
+    }
 }

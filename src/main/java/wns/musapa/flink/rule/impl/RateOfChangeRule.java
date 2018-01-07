@@ -71,19 +71,9 @@ public class RateOfChangeRule extends AbstractRule {
     }
 
     @Override
-    public void execute(Facts facts) throws Exception {
+    protected String executeResult(Facts facts) {
         CoinCandle coinCandle = facts.get(this.factKey);
-
-        if (this.reporter == null || this.user == null ||
-                this.lastFiredAt + this.user.getPushInterval() > System.currentTimeMillis()) {
-            // too early to fire. ignore
-            return;
-        }
-
-        // fire
-        this.reporter.send(this.user, coinCandle.toAlertString());
-        System.out.println("SENT: " + this.coinCode.name() + " / " + this.user.getId());
-        this.lastFiredAt = System.currentTimeMillis();
+        return coinCandle.toAlertString();
     }
 
     @Override

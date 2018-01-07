@@ -5,6 +5,7 @@ import wns.musapa.flink.command.Command;
 import wns.musapa.flink.model.CoinCode;
 import wns.musapa.flink.model.code.UpbitCoinCode;
 import wns.musapa.flink.rule.RuleManager;
+import wns.musapa.flink.rule.impl.MACDRule;
 import wns.musapa.flink.rule.impl.RateOfChangeRule;
 import wns.musapa.flink.user.User;
 
@@ -35,11 +36,30 @@ public class RuleDelCommand extends AbstractCommand implements Command.Handler {
 
         if (tokens[1].toLowerCase().equals("roc")) {
             handleRateOfChange(command, tokens, user, reporter);
+        } else if (tokens[1].toLowerCase().equals("macd")) {
+            handleMACD(command, tokens, user, reporter);
         } else {
             reporter.send(user, "Invalid usage!");
             return;
         }
 
+    }
+
+    private void handleMACD(Command command, String[] tokens, User user, Reporter reporter) {
+        if (tokens.length < 3) {
+            reporter.send(user, "Invalid usage!");
+            return;
+        }
+
+        CoinCode[] coinCodes = getCoinCodes(tokens[2]);
+
+        // Add rules
+        for (CoinCode coinCode : coinCodes) {
+            String ruleName = MACDRule.makeRuleName(user, coinCode);
+            RuleManager.getInstance().removeRule(ruleName);
+        }
+
+        reporter.send(user, "Ok.");
     }
 
     private void handleRateOfChange(Command command, String[] tokens, User user, Reporter reporter) {
@@ -48,16 +68,7 @@ public class RuleDelCommand extends AbstractCommand implements Command.Handler {
             return;
         }
 
-        CoinCode[] coinCodes;
-        if (tokens[2].equalsIgnoreCase("*")) {
-            coinCodes = UpbitCoinCode.values();
-        } else {
-            String[] coinTokens = tokens[2].split(",");
-            coinCodes = new CoinCode[coinTokens.length];
-            for (int i = 0; i < coinTokens.length; i++) {
-                coinCodes[i] = UpbitCoinCode.parseByName(coinTokens[i]);
-            }
-        }
+        CoinCode[] coinCodes = getCoinCodes(tokens[2]);
 
         RateOfChangeRule.Direction direction;
         if (tokens[3].equalsIgnoreCase("rise")) {
@@ -77,5 +88,19 @@ public class RuleDelCommand extends AbstractCommand implements Command.Handler {
 
         reporter.send(user, "Ok.");
         return;
+    }
+
+    private CoinCode[] getCoinCodes(String token) {
+        CoinCode[] coinCodes;
+        if (token.equalsIgnoreCase("*")) {
+            coinCodes = UpbitCoinCode.values();
+        } else {
+            String[] coinTokens = token.split(",");
+            coinCodes = new CoinCode[coinTokens.length];
+            for (int i = 0; i < coinTokens.length; i++) {
+                coinCodes[i] = UpbitCoinCode.parseByName(coinTokens[i]);
+            }
+        }
+        return coinCodes;
     }
 }
