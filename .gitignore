@@ -246,6 +246,6 @@ Temporary Items
 # End of https://www.gitignore.io/api/java,maven,intellij,python,jupyternotebook,macos
 
 # Custom
-src/main/java/wns/musapa/Constant.java
+Constant.java
 data/
 log/
