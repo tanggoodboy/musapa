@@ -15,10 +15,10 @@ public class CoinMACD extends Coin {
         this.ema26 = new EMA(26);
     }
 
-    public void add(CoinCandle coinCandle) {
-        this.ema9.add(coinCandle.getClose().getPrice());
-        this.ema12.add(coinCandle.getClose().getPrice());
-        this.ema26.add(coinCandle.getClose().getPrice());
+    public void add(CoinTick coinTick) {
+        this.ema9.add(coinTick.getTradePrice().getPrice());
+        this.ema12.add(coinTick.getTradePrice().getPrice());
+        this.ema26.add(coinTick.getTradePrice().getPrice());
     }
 
     public double getMACD() {

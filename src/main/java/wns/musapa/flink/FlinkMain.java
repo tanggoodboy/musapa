@@ -5,6 +5,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.evictors.CountEvictor;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +14,10 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import wns.musapa.flink.bot.TelegramBot;
 import wns.musapa.flink.command.impl.*;
-import wns.musapa.flink.model.CoinCandle;
 import wns.musapa.flink.model.CoinCode;
-import wns.musapa.flink.model.CoinMACD;
 import wns.musapa.flink.model.CoinTick;
 import wns.musapa.flink.processor.CandleGenerator;
+import wns.musapa.flink.processor.GetLastCoinTickProcessor;
 import wns.musapa.flink.processor.MACDCalculator;
 import wns.musapa.flink.processor.MACDProcessor;
 import wns.musapa.flink.sink.ConsoleSink;
@@ -28,7 +28,7 @@ public class FlinkMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlinkMain.class);
 
     public static void main(String[] args) throws Exception {
-        final long coinTickWindowSize = 20 * 1000L;
+        final long coinTickWindowSize = 2 * 60 * 1000L;
 
         LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
@@ -50,12 +50,11 @@ public class FlinkMain {
         //  Make MACD stream
         coinTicks.keyBy((KeySelector<CoinTick, CoinCode>) coinTick -> coinTick.getCode())
                 .timeWindow(Time.minutes(30))
-                .apply(new CandleGenerator())
-                .keyBy((KeySelector<CoinCandle, CoinCode>) coinCandle -> coinCandle.getCode())
-                .countWindow(26, 1)
+                .evictor(CountEvictor.of(1))
+                .apply(new GetLastCoinTickProcessor())
+                .countWindowAll(26, 1)
                 .apply(new MACDProcessor())
-                .keyBy((KeySelector<CoinMACD, CoinCode>) coinMACD -> coinMACD.getCode())
-                .countWindow(2, 1)
+                .countWindowAll(2, 1)
                 .apply(new MACDCalculator())
                 .addSink(new ConsoleSink<>());
 
@@ -69,6 +68,14 @@ public class FlinkMain {
         bot.addCommand(new RuleAddCommand());
         bot.addCommand(new RuleDelCommand());
 
+        // add shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (bot != null) {
+                bot.broadcast("Shutdown called. Bye.");
+            }
+        }));
+
+        // start job
         JobExecutionResult result = env.execute();
         LOGGER.info(result.toString());
     }
