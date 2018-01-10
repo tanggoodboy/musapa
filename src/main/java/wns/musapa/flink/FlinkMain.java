@@ -18,8 +18,7 @@ import wns.musapa.flink.model.CoinCode;
 import wns.musapa.flink.model.CoinTick;
 import wns.musapa.flink.processor.CandleGenerator;
 import wns.musapa.flink.processor.GetLastCoinTickProcessor;
-import wns.musapa.flink.processor.MACDCalculator;
-import wns.musapa.flink.processor.MACDProcessor;
+import wns.musapa.flink.processor.MACDDecisionMaker;
 import wns.musapa.flink.sink.ConsoleSink;
 import wns.musapa.flink.sink.NowDashboardSink;
 import wns.musapa.flink.source.UpbitWebsocketSource;
@@ -48,15 +47,17 @@ public class FlinkMain {
 
         // -----
         //  Make MACD stream
+        /*
         coinTicks.keyBy((KeySelector<CoinTick, CoinCode>) coinTick -> coinTick.getCode())
                 .timeWindow(Time.minutes(30))
                 .evictor(CountEvictor.of(1))
-                .apply(new GetLastCoinTickProcessor())
+                .apply(new GetLastCoinTickProcessor<>())
                 .countWindowAll(26, 1)
                 .apply(new MACDProcessor())
                 .countWindowAll(2, 1)
-                .apply(new MACDCalculator())
+                .apply(new MACDDecisionMaker())
                 .addSink(new ConsoleSink<>());
+                */
 
         // ---------- add commands ----------
         bot.addCommand(new PingCommand());
