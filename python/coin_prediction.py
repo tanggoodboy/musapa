@@ -48,7 +48,7 @@ def window_ticks(raw_ticks, limit=10):
     df.index = df.index.tz_localize('UTC').tz_convert('Asia/Seoul')
     df = df['tradePrice'].resample('15Min').ohlc()
     df['rateOfChange'] = df['close'].pct_change()
-    return pd.DataFrame(df.iloc[-limit:])
+    return pd.DataFrame(df.iloc[-limit - 1:-1])
 
 
 def extract_test_data(windowed_df):
@@ -64,7 +64,8 @@ def predict(x):
 
 
 def extract_last_data(windowed_df):
-    return windowed_df.iloc[-1].name, int(windowed_df.iloc[-1]['close'])
+    # Add 15 minutes as last data returns a close price
+    return windowed_df.iloc[-1].name + datetime.timedelta(minutes=15), int(windowed_df.iloc[-1]['close'])
 
 
 def calculate_next_data(last_price, last_timestamp, pred_y):
@@ -78,6 +79,7 @@ def extract_now_data(raw_ticks):
 
 
 def print_result(last_data, pred_data, now_data, rate_of_change):
+    # Add 15 minutes to displayed date as it shows a close price of the date.
     print("Now: \t %s \t %d " % (now_data[0], now_data[1]))
     print("Prev (Real): \t %s \t %d " % (last_data[0], last_data[1]))
     print("Next (Prediction): \t %s \t %d \t %.3f %%" % (pred_data[0], pred_data[1], rate_of_change * 100))
@@ -85,7 +87,7 @@ def print_result(last_data, pred_data, now_data, rate_of_change):
 
 
 def start_pipeline():
-    sleep_interval = 10.0
+    sleep_interval = 60.0
     start_time = time.time()
     print("start at: ", start_time)
     while True:
