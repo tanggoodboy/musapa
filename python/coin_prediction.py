@@ -13,18 +13,6 @@ model = None
 def initialize():
     global model
     model = load_model("./btc_model.h5")
-    pass
-    '''
-    # Load keras model
-    model = load_model("./btc_model.h5")
-    x = [0.1] * 10
-    x = np.array(x)
-    x = np.reshape(x, (1, 10, 1))
-    print(x.shape)
-    print("Model loaded: ", model)
-    y = model.predict(x)
-    print(y)
-    '''
 
 
 def fetch_raw_ticks():
@@ -46,9 +34,9 @@ def window_ticks(raw_ticks, limit=10):
     df["candleDateTimeKst"] = pd.to_datetime(df["candleDateTimeKst"], infer_datetime_format=True)
     df = df.set_index("candleDateTimeKst")
     df.index = df.index.tz_localize('UTC').tz_convert('Asia/Seoul')
-    df = df['tradePrice'].resample('15Min').ohlc()
-    df['rateOfChange'] = df['close'].pct_change()
-    return pd.DataFrame(df.iloc[-limit - 1:-1])
+    df = df['openingPrice'].resample('15Min').ohlc()
+    df['rateOfChange'] = df['open'].pct_change()
+    return pd.DataFrame(df.iloc[-limit:])
 
 
 def extract_test_data(windowed_df):
@@ -64,8 +52,7 @@ def predict(x):
 
 
 def extract_last_data(windowed_df):
-    # Add 15 minutes as last data returns a close price
-    return windowed_df.iloc[-1].name + datetime.timedelta(minutes=15), int(windowed_df.iloc[-1]['close'])
+    return windowed_df.iloc[-1].name, int(windowed_df.iloc[-1]['open'])
 
 
 def calculate_next_data(last_price, last_timestamp, pred_y):
@@ -75,11 +62,11 @@ def calculate_next_data(last_price, last_timestamp, pred_y):
 
 
 def extract_now_data(raw_ticks):
-    return raw_ticks[0]['candleDateTimeKst'], int(raw_ticks[0]['tradePrice'])
+    return raw_ticks[0]['candleDateTimeKst'], int(raw_ticks[0]['openingPrice'])
 
 
 def print_result(last_data, pred_data, now_data, rate_of_change):
-    # Add 15 minutes to displayed date as it shows a close price of the date.
+    # Add 15 minutes to displayed date as it shows an open price of the date.
     print("Now: \t %s \t %d " % (now_data[0], now_data[1]))
     print("Prev (Real): \t %s \t %d " % (last_data[0], last_data[1]))
     print("Next (Prediction): \t %s \t %d \t %.3f %%" % (pred_data[0], pred_data[1], rate_of_change * 100))
